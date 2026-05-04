@@ -64,14 +64,13 @@ local function WatchEntidades()
         end
     end)
 
-    -- seek
-    game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
+ game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
         if value and Entidades.Seek then
             AlertEntidade("Seek")
         end
     end)
 
-    -- Screech (geralmente é um som do player, limitação: alerta ao som gerar no Character)
+ (geralmente é um som do player, limitação: alerta ao som gerar no Character)
     game.Players.LocalPlayer.Character.ChildAdded:Connect(function(child)
         if child.Name == "Screech" and Entidades.Screech then
             AlertEntidade("Screech")
@@ -79,14 +78,14 @@ local function WatchEntidades()
     end)
 
     -- Eyes (ao spawnar na sala)
-    workspace.ChildAdded:Connect(function(child)
+ workspace.ChildAdded:Connect(function(child)
         if child.Name == "Eyes" and Entidades.Eyes then
             AlertEntidade("Eyes")
         end
     end)
 
     -- Halt (detectado no GameData)
-    game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
+ game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
         local room = workspace.CurrentRooms:FindFirstChild(tostring(game.ReplicatedStorage.GameData.LatestRoom.Value))
         if room and room:FindFirstChild("Halt") and Entidades.Halt then
             AlertEntidade("Halt")
@@ -94,7 +93,7 @@ local function WatchEntidades()
     end)
 
     -- Figure (Sala 50, Library)
-    workspace.CurrentRooms.ChildAdded:Connect(function(child)
+ workspace.CurrentRooms.ChildAdded:Connect(function(child)
         if child.Name == "50" and Entidades.Figure then
             local figure = child:FindFirstChild("Figure") or (child:WaitForChild("Figure", 7))
             if figure then
@@ -104,7 +103,7 @@ local function WatchEntidades()
     end)
 
     -- Jack (quando porta contém "Jack")
-    workspace.CurrentRooms.ChildAdded:Connect(function(room)
+ workspace.CurrentRooms.ChildAdded:Connect(function(room)
         if room:FindFirstChild("Jack") and Entidades.Jack then
             AlertEntidade("Jack (Armário/Porta)")
         end
