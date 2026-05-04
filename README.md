@@ -1,4 +1,8 @@
--- NekoHub - DOORS: Aviso de Entidades & Marcação Visual dos Itens - 100% compatível
+-- NekoHub - DOORS: Aviso de Entidades (The Hotel)
+-- Tema vermelho, seleção das entidades que deseja alerta.
+-- Apenas fins educacionais! Não use para vantagem injusta.
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Entidades = {
     Rush = false,
@@ -10,136 +14,101 @@ local Entidades = {
     Figure = false,
     Jack = false,
 }
-local ItensImportantes = {
-    Crucifix = true,
-    Vitamins = true,
-    Lockpick = true,
-    Lighter = true,
-    Candle = true,
-    Flashlight = true,
-    ["Skeleton Key"] = true,
-    Key = true,
-    Gold = true,
-    Battery = true,
-    ["Holy Grenade"] = true
-}
 
--- Simples painel de seleção (pode editar manualmente aqui)
-Entidades.Rush = true
-Entidades.Ambush = true
-Entidades.Seek = true
-Entidades.Screech = true
-Entidades.Eyes = true
-Entidades.Halt = true
-Entidades.Figure = true
-Entidades.Jack = true
-local avisoItens = true -- TRUE para mostrar/marcar itens, FALSE para não mostrar
+local window = Rayfield:CreateWindow({
+    Name = "NekoHub - DOORS",
+    LoadingTitle = "NekoHub Loader",
+    LoadingSubtitle = "Aviso de Entidades (The Hotel)",
+    ConfigurationSaving = {
+        Enabled = false,
+    },
+    Discord = {
+        Enabled = false,
+    },
+    KeySystem = false,
+    TitleColor = Color3.fromRGB(200,50,70),
+})
 
--- Função de notificação padrão Roblox
-local function Notificar(txt)
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "NekoHub",
-        Text = txt,
-        Duration = 5
+local mainTab = window:CreateTab("Entidades", Color3.fromRGB(200, 50, 70))
+
+-- Criando toggles para seleção das entidades desejadas
+for entidade, _ in pairs(Entidades) do
+    mainTab:CreateToggle({
+        Name = "Avisar sobre " .. entidade,
+        CurrentValue = false,
+        Flag = entidade.."Alert",
+        Callback = function(Value)
+            Entidades[entidade] = Value
+        end
     })
 end
 
--- Função que adiciona marcador visual ao item
-local function MarcarItem(item)
-    if item:FindFirstChild("NekoHub_ESP") then
-        item.NekoHub_ESP:Destroy()
-    end
-    local adornee
-    if item:IsA("BasePart") then
-        adornee = item
-    elseif item:IsA("Model") and item.PrimaryPart then
-        adornee = item.PrimaryPart
-    end
-    if adornee then
-        local gui = Instance.new("BillboardGui")
-        gui.Name = "NekoHub_ESP"
-        gui.Size = UDim2.new(0, 100, 0, 30)
-        gui.AlwaysOnTop = true
-        gui.Adornee = adornee
-        gui.StudsOffset = Vector3.new(0, 2, 0)
-        local lbl = Instance.new("TextLabel", gui)
-        lbl.Size = UDim2.new(1, 0, 1, 0)
-        lbl.Text = "🔴 " .. item.Name
-        lbl.TextColor3 = Color3.fromRGB(220,30,30)
-        lbl.BackgroundTransparency = 1
-        lbl.TextScaled = true
-        gui.Parent = adornee
-    end
+-- Função de alerta
+local function AlertEntidade(nome)
+    Rayfield:Notify({
+        Title = "NekoHub - AVISO!",
+        Content = "Entidade detectada: " .. nome,
+        Duration = 5,
+        Image = 4483362458, -- Ícone Roblox alert
+    })
 end
 
--- Remove todos marcadores antigos
-local function LimparMarcadores(sala)
-    if not sala then return end
-    for _, obj in pairs(sala:GetDescendants()) do
-        if obj:IsA("BasePart") and obj:FindFirstChild("NekoHub_ESP") then
-            obj.NekoHub_ESP:Destroy()
+-- Checagem de entidades do The Hotel (Rush, Ambush, Seek, etc.)
+local function WatchEntidades()
+    -- Rush e Ambush
+    workspace.ChildAdded:Connect(function(child)
+        if child.Name == "RushMoving" and Entidades.Rush then
+            AlertEntidade("Rush")
+        elseif child.Name == "AmbushMoving" and Entidades.Ambush then
+            AlertEntidade("Ambush")
         end
-    end
-end
+    end)
 
--- ENTIDADES global
-workspace.ChildAdded:Connect(function(child)
-    if typeof(child) == "Instance" then
-        if child.Name == "RushMoving" and Entidades.Rush then Notificar("Entidade: Rush") end
-        if child.Name == "AmbushMoving" and Entidades.Ambush then Notificar("Entidade: Ambush") end
-        if child.Name == "Eyes" and Entidades.Eyes then Notificar("Entidade: Eyes") end
-    end
-end)
-
-game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
-    if value and Entidades.Seek then Notificar("Entidade: Seek") end
-end)
-
-game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
-    local v = game.ReplicatedStorage.GameData.LatestRoom.Value
-    local rooms = workspace:FindFirstChild("CurrentRooms")
-    local sala = rooms and rooms:FindFirstChild(tostring(v)) or nil
-
-    LimparMarcadores(sala)
-
-    if sala then
-        if sala:FindFirstChild("Halt") and Entidades.Halt then
-            Notificar("Entidade: Halt")
+    -- Seek
+    game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
+        if value and Entidades.Seek then
+            AlertEntidade("Seek")
         end
-        if Entidades.Figure and tostring(v) == "50" and sala:FindFirstChild("Figure") then
-            Notificar("Entidade: Figure (Sala 50)")
-        end
-        if Entidades.Jack and sala:FindFirstChild("Jack") then
-            Notificar("Entidade: Jack (Armário/Porta)")
-        end
+    end)
 
-        if avisoItens then
-            for _, obj in ipairs(sala:GetDescendants()) do
-                if ItensImportantes[obj.Name] then
-                    Notificar("Encontrado: " .. obj.Name)
-                    MarcarItem(obj)
-                end
+    -- Screech (geralmente é um som do player, limitação: alerta ao som gerar no Character)
+    game.Players.LocalPlayer.Character.ChildAdded:Connect(function(child)
+        if child.Name == "Screech" and Entidades.Screech then
+            AlertEntidade("Screech")
+        end
+    end)
+
+    -- Eyes (ao spawnar na sala)
+    workspace.ChildAdded:Connect(function(child)
+        if child.Name == "Eyes" and Entidades.Eyes then
+            AlertEntidade("Eyes")
+        end
+    end)
+
+    -- Halt (detectado no GameData)
+    game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
+        local room = workspace.CurrentRooms:FindFirstChild(tostring(game.ReplicatedStorage.GameData.LatestRoom.Value))
+        if room and room:FindFirstChild("Halt") and Entidades.Halt then
+            AlertEntidade("Halt")
+        end
+    end)
+
+    -- Figure (Sala 50, Library)
+    workspace.CurrentRooms.ChildAdded:Connect(function(child)
+        if child.Name == "50" and Entidades.Figure then
+            local figure = child:FindFirstChild("Figure") or (child:WaitForChild("Figure", 7))
+            if figure then
+                AlertEntidade("Figure (Sala 50)")
             end
-            sala.DescendantAdded:Connect(function(child)
-                if avisoItens and ItensImportantes[child.Name] then
-                    Notificar("Encontrado: " .. child.Name)
-                    MarcarItem(child)
-                end
-            end)
         end
-    end
-end)
+    end)
 
--- Screech (reconecta ao respawn)
-local function conectarScreech(character)
-    if character and typeof(character) == "Instance" then
-        character.ChildAdded:Connect(function(child)
-            if child.Name == "Screech" and Entidades.Screech then
-                Notificar("Entidade: Screech")
-            end
-        end)
-    end
+    -- Jack (quando porta contém "Jack")
+    workspace.CurrentRooms.ChildAdded:Connect(function(room)
+        if room:FindFirstChild("Jack") and Entidades.Jack then
+            AlertEntidade("Jack (Armário/Porta)")
+        end
+    end)
 end
-local plr = game.Players.LocalPlayer
-if plr.Character then conectarScreech(plr.Character) end
-plr.CharacterAdded:Connect(conectarScreech)
+
+WatchEntidades()
