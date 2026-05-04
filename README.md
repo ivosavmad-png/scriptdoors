@@ -1,11 +1,11 @@
--- NekoHub - DOORS: Aviso de Entidades & Itens (The Hotel)
--- Corrigido, compatível, com créditos, multi-aba!
+-- NekoHub - DOORS: Aviso de Entidades & Itens (The Hotel) - SEM nil
 -- github.com/ivosavmad-png & anonixzin
 
--- Carregando OrionLib (painel e notificações super estáveis)
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
 
--- Referência de entidades e itens
+---------------------------
+-- VARIÁVEIS GLOBAIS
+---------------------------
 local Entidades = {
     Rush = false,
     Ambush = false,
@@ -17,127 +17,145 @@ local Entidades = {
     Jack = false,
 }
 local ItensImportantes = {
-    Crucifix = true, Vitamins = true, Lockpick = true, Lighter = true,
-    Candle = true, Flashlight = true, ["Skeleton Key"] = true, Key = true,
-    Gold = true, Battery = true, ["Holy Grenade"] = true
+    Crucifix = true,
+    Vitamins = true,
+    Lockpick = true,
+    Lighter = true,
+    Candle = true,
+    Flashlight = true,
+    ["Skeleton Key"] = true,
+    Key = true,
+    Gold = true,
+    Battery = true,
+    ["Holy Grenade"] = true,
 }
+local avisoItens = false
+local salaAtualCon -- conexão para DescendantAdded
 
--- Função notificação Orion padrão
-local function Alert(title, txt, tempo)
+---------------------------
+-- FUNÇÕES DE INTERFACE
+---------------------------
+local function Alert(txt, tempo)
     OrionLib:MakeNotification({
-        Name = title or "NekoHub",
+        Name = "NekoHub",
         Content = txt or "",
         Time = tempo or 5
     })
 end
 
--- Cria a janela principal
+---------------------------
+-- CRIANDO PAINEL
+---------------------------
 local Janela = OrionLib:MakeWindow({
     Name = "NekoHub - DOORS",
     HidePremium = true,
-    IntroText = "NekoHub Loaded",
     SaveConfig = false,
-    ConfigFolder = "NekoHubDOORS",
+    IntroText = "NekoHub Loaded",
 })
 
--- Notificação de créditos ao iniciar
-Alert("NekoHub", "Criado por anonixzin", 6)
+-- Mensagem de créditos ao iniciar
+Alert("Criado por anonixzin", 6)
 
---//////////// ABA DE ENTIDADES ////////////
+-- ABA ENTIDADES
 local entidadeAba = Janela:MakeTab({
     Name = "Entidades",
-    Icon = "rbxassetid://4483345998", -- ícone de olho
+    Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
-
 for entidade, _ in pairs(Entidades) do
     entidadeAba:AddToggle({
         Name = "Avisar sobre " .. entidade,
         Default = false,
         Callback = function(state)
-            Entidades[entidade] = state
+            Entidades[entidade] = state == true
         end
     })
 end
 
---//////////// ABA DE ITENS ////////////
+-- ABA ITENS
 local itensAba = Janela:MakeTab({
     Name = "Itens",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
-
-local avisoItens = false
 itensAba:AddToggle({
     Name = "Avisar itens na sala",
     Default = false,
     Callback = function(state)
-        avisoItens = state
+        avisoItens = state == true
     end
 })
 
---///////// FUNÇÕES DE DETECÇÃO /////////
-
--- ENTIDADES: conexões únicas, listeners robustos
+---------------------------
+-- AVISOS DE ENTIDADES
+---------------------------
 workspace.ChildAdded:Connect(function(child)
-    if child.Name == "RushMoving" and Entidades.Rush then Alert("NekoHub - AVISO!", "Entidade: Rush") end
-    if child.Name == "AmbushMoving" and Entidades.Ambush then Alert("NekoHub - AVISO!", "Entidade: Ambush") end
-    if child.Name == "Eyes" and Entidades.Eyes then Alert("NekoHub - AVISO!", "Entidade: Eyes") end
+    if typeof(child) == "Instance" then
+        if child.Name == "RushMoving" and Entidades.Rush then Alert("Entidade: Rush") end
+        if child.Name == "AmbushMoving" and Entidades.Ambush then Alert("Entidade: Ambush") end
+        if child.Name == "Eyes" and Entidades.Eyes then Alert("Entidade: Eyes") end
+    end
 end)
 
 game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
-    if value and Entidades.Seek then Alert("NekoHub - AVISO!", "Entidade: Seek") end
+    if value == true and Entidades.Seek then
+        Alert("Entidade: Seek")
+    end
 end)
 
 game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
     local v = game.ReplicatedStorage.GameData.LatestRoom.Value
-    local room = workspace.CurrentRooms:FindFirstChild(tostring(v))
+    local room = workspace:FindFirstChild("CurrentRooms") and workspace.CurrentRooms:FindFirstChild(tostring(v))
     if room then
         if room:FindFirstChild("Halt") and Entidades.Halt then
-            Alert("NekoHub - AVISO!", "Entidade: Halt")
+            Alert("Entidade: Halt")
         end
-        if Entidades.Figure and tostring(v) == "50" then
-            local ok, figure = pcall(function() return room:FindFirstChild("Figure") or room:WaitForChild("Figure",7) end)
-            if ok and figure then Alert("NekoHub - AVISO!", "Entidade: Figure (Sala 50)") end
+        if Entidades.Figure and tostring(v) == "50" and room:FindFirstChild("Figure") then
+            Alert("Entidade: Figure (Sala 50)")
         end
         if Entidades.Jack and room:FindFirstChild("Jack") then
-            Alert("NekoHub - AVISO!", "Entidade: Jack (Armário/Porta)")
+            Alert("Entidade: Jack (Armário/Porta)")
         end
     end
 end)
 
--- Screech no Character (tolerante ao respawn)
+-- Screech (suporta respawn)
 local function listenScreech(character)
-    if not character then return end
-    character.ChildAdded:Connect(function(child)
-        if child.Name == "Screech" and Entidades.Screech then
-            Alert("NekoHub - AVISO!", "Entidade: Screech")
-        end
-    end)
+    if character and character:IsA("Model") then
+        character.ChildAdded:Connect(function(child)
+            if child.Name == "Screech" and Entidades.Screech then
+                Alert("Entidade: Screech")
+            end
+        end)
+    end
 end
 local plr = game.Players.LocalPlayer
-listenScreech(plr.Character or plr.CharacterAdded:Wait())
+if plr.Character then listenScreech(plr.Character) end
 plr.CharacterAdded:Connect(listenScreech)
 
--- ITENS: checagem na entrada da sala e ao spawnar coisa nova
-local salaAtualCon
+---------------------------
+-- AVISOS DE ITENS NA SALA
+---------------------------
 game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
+    if not avisoItens then return end
     local v = game.ReplicatedStorage.GameData.LatestRoom.Value
-    local sala = workspace.CurrentRooms:FindFirstChild(tostring(v))
-    if salaAtualCon then pcall(function() salaAtualCon:Disconnect() end) end
-    if sala and avisoItens then
+    local sala = workspace:FindFirstChild("CurrentRooms") and workspace.CurrentRooms:FindFirstChild(tostring(v))
+    if salaAtualCon then
+        pcall(function() salaAtualCon:Disconnect() end)
+        salaAtualCon = nil
+    end
+    if sala then
         for _, obj in ipairs(sala:GetDescendants()) do
             if ItensImportantes[obj.Name] then
-                Alert("NekoHub - ITEM!", "Encontrado: " .. obj.Name)
+                Alert("Encontrado: " .. obj.Name)
             end
         end
         salaAtualCon = sala.DescendantAdded:Connect(function(child)
-            if avisoItens and ItensImportantes[child.Name] then
-                Alert("NekoHub - ITEM!", "Encontrado: " .. child.Name)
+            if avisoItens and child and ItensImportantes[child.Name] then
+                Alert("Encontrado: " .. child.Name)
             end
         end)
     end
 end)
 
--- OrionLib required loop to keep GUI active
 OrionLib:Init()
