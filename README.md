@@ -1,5 +1,4 @@
--- NekoHub - DOORS: Aviso de Entidades & Itens - Mostra a posição dos itens (com marcador visual)
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+-- NekoHub - DOORS: Aviso de Entidades & Marcação Visual dos Itens - 100% compatível
 
 local Entidades = {
     Rush = false,
@@ -11,7 +10,6 @@ local Entidades = {
     Figure = false,
     Jack = false,
 }
-
 local ItensImportantes = {
     Crucifix = true,
     Vitamins = true,
@@ -26,25 +24,31 @@ local ItensImportantes = {
     ["Holy Grenade"] = true
 }
 
-local avisoItens = false
-local salaAtualCon = nil
+-- Simples painel de seleção (pode editar manualmente aqui)
+Entidades.Rush = true
+Entidades.Ambush = true
+Entidades.Seek = true
+Entidades.Screech = true
+Entidades.Eyes = true
+Entidades.Halt = true
+Entidades.Figure = true
+Entidades.Jack = true
+local avisoItens = true -- TRUE para mostrar/marcar itens, FALSE para não mostrar
 
--- Função de notificação
-local function Notificar(txt, tempo)
-    OrionLib:MakeNotification({
-        Name = "NekoHub",
-        Content = txt,
-        Time = tempo or 5
+-- Função de notificação padrão Roblox
+local function Notificar(txt)
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "NekoHub",
+        Text = txt,
+        Duration = 5
     })
 end
 
--- Função que adiciona BillboardGui (marcador) no item
+-- Função que adiciona marcador visual ao item
 local function MarcarItem(item)
-    -- Remove marcador antigo se existir
     if item:FindFirstChild("NekoHub_ESP") then
         item.NekoHub_ESP:Destroy()
     end
-    -- Só marca se for BasePart ou Model com PrimaryPart
     local adornee
     if item:IsA("BasePart") then
         adornee = item
@@ -68,8 +72,8 @@ local function MarcarItem(item)
     end
 end
 
--- Remove todos marcadores de sala anterior
-local function LimpaMarcadores(sala)
+-- Remove todos marcadores antigos
+local function LimparMarcadores(sala)
     if not sala then return end
     for _, obj in pairs(sala:GetDescendants()) do
         if obj:IsA("BasePart") and obj:FindFirstChild("NekoHub_ESP") then
@@ -78,46 +82,7 @@ local function LimpaMarcadores(sala)
     end
 end
 
--- Criação do painel principal
-local Janela = OrionLib:MakeWindow({
-    Name = "NekoHub - DOORS",
-    HidePremium = true,
-    SaveConfig = false
-})
-
--- Aba de Entidades
-local abaEntidade = Janela:MakeTab({
-    Name = "Entidades",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-for entidade, _ in pairs(Entidades) do
-    abaEntidade:AddToggle({
-        Name = "Avisar sobre " .. entidade,
-        Default = false,
-        Callback = function(state)
-            Entidades[entidade] = state
-        end
-    })
-end
-
--- Aba de Itens
-local abaItens = Janela:MakeTab({
-    Name = "Itens",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
-abaItens:AddToggle({
-    Name = "Avisar e mostrar itens na sala",
-    Default = false,
-    Callback = function(state)
-        avisoItens = state
-    end
-})
-
--- Detecção de entidades (listeners globais)
+-- ENTIDADES global
 workspace.ChildAdded:Connect(function(child)
     if typeof(child) == "Instance" then
         if child.Name == "RushMoving" and Entidades.Rush then Notificar("Entidade: Rush") end
@@ -131,35 +96,12 @@ game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
 end)
 
 game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
-    -- Limpa marcadores antigos (se algum)
-    if salaAtualCon then
-        salaAtualCon:Disconnect()
-        salaAtualCon = nil
-    end
-
     local v = game.ReplicatedStorage.GameData.LatestRoom.Value
     local rooms = workspace:FindFirstChild("CurrentRooms")
     local sala = rooms and rooms:FindFirstChild(tostring(v)) or nil
 
-    if sala then
-        LimpaMarcadores(sala)
-        if avisoItens then
-            for _, obj in ipairs(sala:GetDescendants()) do
-                if ItensImportantes[obj.Name] then
-                    Notificar("Encontrado: " .. obj.Name)
-                    MarcarItem(obj)
-                end
-            end
-            salaAtualCon = sala.DescendantAdded:Connect(function(child)
-                if avisoItens and ItensImportantes[child.Name] then
-                    Notificar("Encontrado: " .. child.Name)
-                    MarcarItem(child)
-                end
-            end)
-        end
-    end
+    LimparMarcadores(sala)
 
-    -- Entidades que dependem da sala
     if sala then
         if sala:FindFirstChild("Halt") and Entidades.Halt then
             Notificar("Entidade: Halt")
@@ -169,6 +111,21 @@ game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
         end
         if Entidades.Jack and sala:FindFirstChild("Jack") then
             Notificar("Entidade: Jack (Armário/Porta)")
+        end
+
+        if avisoItens then
+            for _, obj in ipairs(sala:GetDescendants()) do
+                if ItensImportantes[obj.Name] then
+                    Notificar("Encontrado: " .. obj.Name)
+                    MarcarItem(obj)
+                end
+            end
+            sala.DescendantAdded:Connect(function(child)
+                if avisoItens and ItensImportantes[child.Name] then
+                    Notificar("Encontrado: " .. child.Name)
+                    MarcarItem(child)
+                end
+            end)
         end
     end
 end)
@@ -186,5 +143,3 @@ end
 local plr = game.Players.LocalPlayer
 if plr.Character then conectarScreech(plr.Character) end
 plr.CharacterAdded:Connect(conectarScreech)
-
-OrionLib:Init()
