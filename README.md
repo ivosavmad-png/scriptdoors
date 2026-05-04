@@ -1,8 +1,17 @@
--- NekoHub - DOORS: Aviso de Entidades (The Hotel)
--- Tema vermelho, seleção das entidades que deseja alerta.
--- Apenas fins educacionais! Não use para vantagem injusta.
+-- NekoHub - DOORS: Aviso de Entidades & Itens (The Hotel)
+-- Painel vermelho, multi-aba, notificação de créditos.
+-- Somente para estudos! Não use para vantagem injusta.
+-- github.com/ivosavmad-png & anonixzin
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Mensagem de créditos ao abrir o painel
+Rayfield:Notify({
+    Title = "NekoHub",
+    Content = "Criado por anonixzin",
+    Duration = 5,
+    Image = 4483362458,
+})
 
 local Entidades = {
     Rush = false,
@@ -15,10 +24,25 @@ local Entidades = {
     Jack = false,
 }
 
+-- Itens para aviso
+local ItensImportantes = {
+    Crucifix = true,        -- Crucifixo
+    Vitamins = true,        -- Vitaminas
+    Lockpick = true,        -- Chave mestra
+    Lighter = true,         -- Isqueiro
+    Candle = true,          -- Vela
+    Flashlight = true,      -- Lanterna
+    ["Skeleton Key"] = true,-- Chave Esqueleto
+    Key = true,             -- Chave de porta
+    Gold = true,            -- Ouro
+    Battery = true,         -- Bateria (usada em alguns updates)
+    ["Holy Grenade"] = true -- Easter egg (se existir)
+}
+
 local window = Rayfield:CreateWindow({
     Name = "NekoHub - DOORS",
     LoadingTitle = "NekoHub Loader",
-    LoadingSubtitle = "Aviso de Entidades (The Hotel)",
+    LoadingSubtitle = "Aviso de Entidades & Itens (The Hotel)",
     ConfigurationSaving = {
         Enabled = false,
     },
@@ -29,11 +53,12 @@ local window = Rayfield:CreateWindow({
     TitleColor = Color3.fromRGB(200,50,70),
 })
 
-local mainTab = window:CreateTab("Entidades", Color3.fromRGB(200, 50, 70))
+local entidadeTab = window:CreateTab("Entidades", Color3.fromRGB(200,50,70))
+local itensTab = window:CreateTab("Itens", Color3.fromRGB(200,50,70))
 
--- Criando toggles para seleção das entidades desejadas
+-- Aba de entidades:
 for entidade, _ in pairs(Entidades) do
-    mainTab:CreateToggle({
+    entidadeTab:CreateToggle({
         Name = "Avisar sobre " .. entidade,
         CurrentValue = false,
         Flag = entidade.."Alert",
@@ -43,71 +68,107 @@ for entidade, _ in pairs(Entidades) do
     })
 end
 
--- Função de alerta
-local function AlertEntidade(nome)
+-- Aba de itens:
+local avisoItens = false
+itensTab:CreateToggle({
+    Name = "Avisar itens na sala",
+    CurrentValue = false,
+    Flag = "ItensAlerta",
+    Callback = function(Value)
+        avisoItens = Value
+    end
+})
+
+-- Função notificação Rayfield
+local function Alert(title, msg)
     Rayfield:Notify({
-        Title = "NekoHub - AVISO!",
-        Content = "Entidade detectada: " .. nome,
+        Title = title,
+        Content = msg,
         Duration = 5,
-        Image = 4483362458, -- Ícone Roblox alert
+        Image = 4483362458,
     })
 end
 
--- Checagem de entidades do The Hotel (Rush, Ambush, Seek, etc.)
+-- Função de aviso de entidades
 local function WatchEntidades()
     -- Rush e Ambush
     workspace.ChildAdded:Connect(function(child)
         if child.Name == "RushMoving" and Entidades.Rush then
-            AlertEntidade("Rush")
+            Alert("NekoHub - AVISO!", "Entidade detectada: Rush")
         elseif child.Name == "AmbushMoving" and Entidades.Ambush then
-            AlertEntidade("Ambush")
+            Alert("NekoHub - AVISO!", "Entidade detectada: Ambush")
         end
     end)
 
- game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
+ -- Seek
+    game.ReplicatedStorage.GameData.SeekerMoving.Changed:Connect(function(value)
         if value and Entidades.Seek then
-            AlertEntidade("Seek")
+            Alert("NekoHub - AVISO!", "Entidade detectada: Seek")
         end
     end)
 
- (geralmente é um som do player, limitação: alerta ao som gerar no Character)
+-- Screech (no Character)
     game.Players.LocalPlayer.Character.ChildAdded:Connect(function(child)
         if child.Name == "Screech" and Entidades.Screech then
-            AlertEntidade("Screech")
+            Alert("NekoHub - AVISO!", "Entidade detectada: Screech")
         end
     end)
 
-    -- Eyes (ao spawnar na sala)
- workspace.ChildAdded:Connect(function(child)
+ -- Eyes (na sala)
+    workspace.ChildAdded:Connect(function(child)
         if child.Name == "Eyes" and Entidades.Eyes then
-            AlertEntidade("Eyes")
+            Alert("NekoHub - AVISO!", "Entidade detectada: Eyes")
         end
     end)
 
-    -- Halt (detectado no GameData)
- game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
+-- Halt (sala)
+    game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
         local room = workspace.CurrentRooms:FindFirstChild(tostring(game.ReplicatedStorage.GameData.LatestRoom.Value))
         if room and room:FindFirstChild("Halt") and Entidades.Halt then
-            AlertEntidade("Halt")
+            Alert("NekoHub - AVISO!", "Entidade detectada: Halt")
         end
     end)
 
-    -- Figure (Sala 50, Library)
- workspace.CurrentRooms.ChildAdded:Connect(function(child)
+ -- Figure (sala 50)
+    workspace.CurrentRooms.ChildAdded:Connect(function(child)
         if child.Name == "50" and Entidades.Figure then
             local figure = child:FindFirstChild("Figure") or (child:WaitForChild("Figure", 7))
             if figure then
-                AlertEntidade("Figure (Sala 50)")
+                Alert("NekoHub - AVISO!", "Entidade detectada: Figure (Sala 50)")
             end
         end
     end)
 
-    -- Jack (quando porta contém "Jack")
- workspace.CurrentRooms.ChildAdded:Connect(function(room)
+ -- Jack (porta/sala)
+    workspace.CurrentRooms.ChildAdded:Connect(function(room)
         if room:FindFirstChild("Jack") and Entidades.Jack then
-            AlertEntidade("Jack (Armário/Porta)")
+            Alert("NekoHub - AVISO!", "Entidade detectada: Jack (Armário/Porta)")
+        end
+    end)
+end
+
+-- Função de aviso de itens na sala
+local function WatchItens()
+    -- Ao entrar numa nova sala, verifica itens
+    game.ReplicatedStorage.GameData.LatestRoom.Changed:Connect(function()
+        if not avisoItens then return end
+        -- Busca pela sala atual
+        local salaAtual = workspace.CurrentRooms:FindFirstChild(tostring(game.ReplicatedStorage.GameData.LatestRoom.Value))
+        if salaAtual then
+            for _, obj in pairs(salaAtual:GetDescendants()) do
+                if ItensImportantes[obj.Name] then
+                    Alert("NekoHub - ITEM!", "Encontrado: " .. obj.Name)
+                end
+            end
+            -- Detecta spawn ao vivo
+            salaAtual.DescendantAdded:Connect(function(child)
+                if avisoItens and ItensImportantes[child.Name] then
+                    Alert("NekoHub - ITEM!", "Encontrado: " .. child.Name)
+                end
+            end)
         end
     end)
 end
 
 WatchEntidades()
+WatchItens()
